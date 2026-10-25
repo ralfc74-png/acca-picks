@@ -8,7 +8,7 @@ const store = {
 const TIER_RANK = { S: 4, A: 3, B: 2, C: 1 };
 const state = {
   data: null, market: store.get('market', '1x2'), date: store.get('date', 'today'),
-  league: 'all', sort: 'p', minTier: 'C', sides: 'best', frac: store.get('frac', false),
+  league: 'all', boost: store.get('boost', 'off'), boostMin: store.get('boostMin', '1.10'), sort: 'p', minTier: 'C', sides: 'best', frac: store.get('frac', false),
   slip: store.get('slip', [])   // [{id, fid, ...pick snapshot}]
 };
 
@@ -70,14 +70,29 @@ function buildControls() {
   if (m.odds === 'Bet365') note = 'Bet365 odds shown where football-data has them. Always check the live price.';
   else if (m.odds === 'derived') note = 'No bookmaker price in the free data. Fair odds are an estimate; implied chance is derived from the 1X2 market.';
   else note = 'No bookmaker odds in the free data for this market. Fair odds below are an ESTIMATE, not a price you can bet at.';
-  if (m.boost) note += ' This market type can count towards the Bet365 acca boost (competition and price rules apply, check the terms).';
+  if (m.boost) note += ' This market type can count towards the Bet365 acca boost (selected leagues and minimum leg odds apply, check the terms).';
+  else note += ' This market does not count towards the Bet365 acca boost.';
   $('marketNote').textContent = note;
 }
 $('league').onchange = e => { state.league = e.target.value; render(); };
 $('sort').onchange = e => { state.sort = e.target.value; render(); };
 $('minTier').onchange = e => { state.minTier = e.target.value; render(); };
+$('boost').value = state.boost; $('boostMin').value = state.boostMin;
+$('boost').onchange = e => { state.boost = e.target.value; store.set('boost', state.boost); render(); };
+$('boostMin').onchange = e => { state.boostMin = e.target.value; store.set('boostMin', state.boostMin); render(); };
 $('sides').onchange = e => { state.sides = e.target.value; render(); };
 $('oddsFmt').onclick = () => { state.frac = !state.frac; store.set('frac', state.frac); buildControls(); render(); renderSlip(); };
+
+// ---------- acca boost eligibility
+// Per bet365's published terms: standard Full Time Result, BTTS and Result/BTTS only (no double chance,
+// draw no bet, goals lines or corners), and no leg below the minimum odds. bet365 also limits the boost to
+// "selected leagues", and that list is not in the free data, so check it in the bet365 app.
+const BOOST_MARKETS = new Set(['1x2', 'btts']);
+function boostOK(p) {
+  if (!BOOST_MARKETS.has(p.m)) return false;
+  const o = p.odds != null ? p.odds : p.fair;
+  return o >= parseFloat(state.boostMin);
+}
 
 // ---------- filtering
 function inDate(f) {
@@ -92,7 +107,7 @@ function candidates() {
   for (const f of state.data.fixtures) {
     if (state.league !== 'all' && f.league !== state.league) continue;
     if (!inDate(f)) continue;
-    let ps = f.picks.filter(p => p.m === state.market && TIER_RANK[p.tier] >= TIER_RANK[state.minTier]);
+    let ps = f.picks.filter(p => p.m === state.market && TIER_RANK[p.tier] >= TIER_RANK[state.minTier] && (state.boost !== 'on' || boostOK(p)));
     if (state.sides === 'best' && ps.length) { ps = [ps.slice().sort((a, b) => b.p - a.p)[0]]; }
     for (const p of ps) out.push({ f, p });
   }
@@ -111,7 +126,8 @@ function render() {
   const list = candidates();
   const inSlip = new Set(state.slip.map(s => s.pid));
   if (!list.length) {
-    const msg = state.date === 'today' ? 'No matches left today for this filter. Try Tomorrow or Next 7 days.' : 'No picks for this filter.';
+    let msg = state.date === 'today' ? 'No matches left today for this filter. Try Tomorrow or Next 7 days.' : 'No picks for this filter.';
+    if (state.boost === 'on' && !BOOST_MARKETS.has(state.market)) msg = 'This market does not count towards the bet365 Acca Boost. Switch to Match result or Both teams to score.';
     $('list').innerHTML = '<div class="empty">' + msg + '</div>';
   } else {
     $('list').innerHTML = list.map(({ f, p }) => {
@@ -131,7 +147,7 @@ function render() {
           <span><span class="k">Edge${p.imp_src && p.odds == null ? ' (derived)' : ''}</span><b class="${edgeCls}">${p.edge == null ? '–' : (p.edge > 0 ? '+' : '') + p.edge.toFixed(1) + 'pp'}</b></span>
           ${p.ev != null ? `<span><span class="k">EV per £1</span><b class="${p.ev > 0 ? 'pos' : 'neg'}">${p.ev > 0 ? '+' : ''}${(p.ev * 100).toFixed(0)}p</b></span>` : ''}
         </div>
-        <div class="reason">${esc(p.reason)}${f.low_sample ? ' <span class="tag">low sample</span>' : ''}</div>
+        <div class="reason">${boostOK(p) ? '<span class="tag boost">Acca boost</span> ' : ''}${esc(p.reason)}${f.low_sample ? ' <span class="tag">low sample</span>' : ''}</div>
       </div>`;
     }).join('');
   }

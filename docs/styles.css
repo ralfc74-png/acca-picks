@@ -55,3 +55,5 @@ footer ul{padding-left:18px}
 .slipactions{display:flex;gap:10px;margin-top:12px}
 .slipactions button{flex:1;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--card2)}
 .slipactions .danger{color:var(--bad)}
+
+.tag.boost{color:#3fb950;border-color:#3fb950;margin-left:0}
