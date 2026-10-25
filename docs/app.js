@@ -8,7 +8,7 @@ const store = {
 const TIER_RANK = { S: 4, A: 3, B: 2, C: 1 };
 const state = {
   data: null, market: store.get('market', '1x2'), date: store.get('date', 'today'),
-  league: 'all', boost: store.get('boost', 'off'), boostMin: store.get('boostMin', '1.10'), sort: 'p', minTier: 'C', sides: 'best', frac: store.get('frac', false),
+  league: 'all', boost: store.get('boost', 'off'), boostMin: store.get('boostMin', '1.10'), noBoost: store.get('noBoost', ['B1']), sort: 'p', minTier: 'C', sides: 'best', frac: store.get('frac', false),
   slip: store.get('slip', [])   // [{id, fid, ...pick snapshot}]
 };
 
@@ -64,6 +64,8 @@ function buildControls() {
   const prev = state.league;
   lg.innerHTML = '<option value="all">All leagues</option>' + d.leagues.map(l => `<option value="${l.code}">${esc(l.name)}</option>`).join('');
   lg.value = prev;
+  $('boostLeagues').innerHTML = d.leagues.map(l => `<label class="chk"><input type="checkbox" data-l="${l.code}" ${state.noBoost.includes(l.code) ? '' : 'checked'}> ${esc(l.name)}</label>`).join('');
+  $('boostLeagues').onchange = e => { const c = e.target.closest('input'); if (!c) return; const s = new Set(state.noBoost); if (c.checked) s.delete(c.dataset.l); else s.add(c.dataset.l); state.noBoost = [...s]; store.set('noBoost', state.noBoost); render(); };
   $('oddsFmt').textContent = state.frac ? 'Fractional' : 'Decimal';
   const m = d.markets.find(x => x.key === state.market);
   let note = '';
@@ -88,8 +90,9 @@ $('oddsFmt').onclick = () => { state.frac = !state.frac; store.set('frac', state
 // draw no bet, goals lines or corners), and no leg below the minimum odds. bet365 also limits the boost to
 // "selected leagues", and that list is not in the free data, so check it in the bet365 app.
 const BOOST_MARKETS = new Set(['1x2', 'btts']);
-function boostOK(p) {
+function boostOK(p, f) {
   if (!BOOST_MARKETS.has(p.m)) return false;
+  if (f && state.noBoost.includes(f.league)) return false;
   const o = p.odds != null ? p.odds : p.fair;
   return o >= parseFloat(state.boostMin);
 }
@@ -107,7 +110,7 @@ function candidates() {
   for (const f of state.data.fixtures) {
     if (state.league !== 'all' && f.league !== state.league) continue;
     if (!inDate(f)) continue;
-    let ps = f.picks.filter(p => p.m === state.market && TIER_RANK[p.tier] >= TIER_RANK[state.minTier] && (state.boost !== 'on' || boostOK(p)));
+    let ps = f.picks.filter(p => p.m === state.market && TIER_RANK[p.tier] >= TIER_RANK[state.minTier] && (state.boost !== 'on' || boostOK(p, f)));
     if (state.sides === 'best' && ps.length) { ps = [ps.slice().sort((a, b) => b.p - a.p)[0]]; }
     for (const p of ps) out.push({ f, p });
   }
@@ -147,7 +150,7 @@ function render() {
           <span><span class="k">Edge${p.imp_src && p.odds == null ? ' (derived)' : ''}</span><b class="${edgeCls}">${p.edge == null ? '–' : (p.edge > 0 ? '+' : '') + p.edge.toFixed(1) + 'pp'}</b></span>
           ${p.ev != null ? `<span><span class="k">EV per £1</span><b class="${p.ev > 0 ? 'pos' : 'neg'}">${p.ev > 0 ? '+' : ''}${(p.ev * 100).toFixed(0)}p</b></span>` : ''}
         </div>
-        <div class="reason">${boostOK(p) ? '<span class="tag boost">Acca boost</span> ' : ''}${esc(p.reason)}${f.low_sample ? ' <span class="tag">low sample</span>' : ''}</div>
+        <div class="reason">${boostOK(p, f) ? '<span class="tag boost">Acca boost</span> ' : ''}${esc(p.reason)}${f.low_sample ? ' <span class="tag">low sample</span>' : ''}</div>
       </div>`;
     }).join('');
   }

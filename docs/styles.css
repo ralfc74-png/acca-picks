@@ -57,3 +57,5 @@ footer ul{padding-left:18px}
 .slipactions .danger{color:var(--bad)}
 
 .tag.boost{color:#3fb950;border-color:#3fb950;margin-left:0}
+
+.boostlg{margin-top:10px;font-size:13px;color:var(--mut)}.boostlg summary{cursor:pointer}.lgbox{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}.chk{display:flex;gap:6px;align-items:center;color:var(--fg,#e6edf3)}
