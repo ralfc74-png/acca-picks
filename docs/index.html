@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Acca Picks</title>
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Acca Picks">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1>Acca Picks</h1>
+    <button id="oddsFmt" class="mini" aria-label="Switch odds format">Decimal</button>
+  </div>
+  <div id="updated" class="sub">Loading…</div>
+  <div id="stale" class="warn" hidden></div>
+</header>
+
+<section class="controls">
+  <div class="label">Market</div>
+  <div id="markets" class="chips scroll" role="tablist"></div>
+
+  <div class="label">When</div>
+  <div id="dates" class="chips"></div>
+
+  <div class="row">
+    <label>League
+      <select id="league"></select>
+    </label>
+    <label>Sort by
+      <select id="sort">
+        <option value="p">Probability</option>
+        <option value="edge">Edge vs bookie</option>
+        <option value="ko">Kick-off</option>
+      </select>
+    </label>
+  </div>
+  <div class="row">
+    <label>Min tier
+      <select id="minTier">
+        <option value="C">Any (C and up)</option>
+        <option value="B">B and up</option>
+        <option value="A">A and up</option>
+        <option value="S">S only</option>
+      </select>
+    </label>
+    <label>Sides
+      <select id="sides">
+        <option value="best">Best side per match</option>
+        <option value="all">All selections</option>
+      </select>
+    </label>
+  </div>
+  <div id="marketNote" class="note"></div>
+</section>
+
+<section class="auto">
+  <div class="label">Auto-build from top picks (one per match)</div>
+  <div class="chips" id="autoBtns">
+    <button data-n="4">4-fold</button><button data-n="6">6-fold</button><button data-n="8">8-fold</button>
+    <button data-n="12">12-fold</button><button data-n="20">20-fold</button>
+  </div>
+  <div id="autoMsg" class="note"></div>
+</section>
+
+<main id="list" aria-live="polite"></main>
+
+<footer>
+  <p><strong>Read this.</strong> This app only shows estimates. It never places bets and nothing here is a guarantee or a tip to bet.
+  Probabilities come from a simple model and can be wrong. Long accumulators have a very low chance of winning
+  (a 20-fold at even 70% a leg lands about 1 time in 1,300). Bookmaker odds shown can be hours old, so always check the live
+  price and the market rules (including Bet365 acca boost terms) before placing anything. Only stake what you can afford to lose.
+  18+. Need help? <a href="https://www.begambleaware.org" target="_blank" rel="noopener">BeGambleAware.org</a> ·
+  <a href="https://www.gamstop.co.uk" target="_blank" rel="noopener">GAMSTOP</a> · National Gambling Helpline 0808 8020 133.</p>
+  <ul id="notes"></ul>
+</footer>
+
+<div id="slipBar" class="slipbar" hidden>
+  <button id="slipToggle">
+    <span id="slipCount">0 picks</span>
+    <span id="slipOdds">–</span>
+    <span id="slipProb">–</span>
+    <span class="chev">▲</span>
+  </button>
+</div>
+<div id="slipPanel" class="slippanel" hidden>
+  <div class="handle"><b>Your slip</b><button id="slipClose" class="mini">Close</button></div>
+  <div id="slipLegs"></div>
+  <div id="slipSummary"></div>
+  <div class="slipactions">
+    <button id="slipCopy">Copy slip</button>
+    <button id="slipClear" class="danger">Clear</button>
+  </div>
+  <p class="note">Slip is for planning only. Combined chance assumes the legs are independent. Check every price on Bet365 before placing.</p>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
