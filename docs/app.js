@@ -57,7 +57,7 @@ function buildControls() {
   const d = state.data;
   $('markets').innerHTML = d.markets.map(m => `<button role="tab" data-m="${m.key}" class="${m.key === state.market ? 'on' : ''}">${esc(m.label)}</button>`).join('');
   $('markets').onclick = e => { const b = e.target.closest('button'); if (!b) return; state.market = b.dataset.m; store.set('market', state.market); buildControls(); render(); };
-  const ds = [['today', 'Today'], ['tomorrow', 'Tomorrow'], ['week', 'Next 7 days']];
+  const ds = [['today', 'Today'], ['tomorrow', 'Tomorrow'], ['mid', 'Midweek'], ['wkend', 'Weekend'], ['week', 'Next 7 days']];
   $('dates').innerHTML = ds.map(([k, l]) => `<button data-d="${k}" class="${k === state.date ? 'on' : ''}">${l}</button>`).join('');
   $('dates').onclick = e => { const b = e.target.closest('button'); if (!b) return; state.date = b.dataset.d; store.set('date', state.date); buildControls(); render(); };
   const lg = $('league');
@@ -102,6 +102,12 @@ function inDate(f) {
   const ko = new Date(f.kickoff), now = new Date();
   if (ko.getTime() < now.getTime() - 5 * 60e3) return false;   // already started
   if (state.date === 'week') return ko.getTime() <= now.getTime() + 7 * 864e5;
+  if (state.date === 'mid' || state.date === 'wkend') {   // Mon-Thu = midweek, Fri-Sun = weekend (UK time), coming up within 7 days
+    if (ko.getTime() > now.getTime() + 7 * 864e5) return false;
+    const wd = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'short' }).format(ko);
+    const isWkend = ['Fri', 'Sat', 'Sun'].includes(wd);
+    return state.date === 'wkend' ? isWkend : !isWkend;
+  }
   const t = ymd(now), tm = ymd(new Date(now.getTime() + 864e5));
   return ymd(ko) === (state.date === 'today' ? t : tm);
 }
@@ -129,7 +135,7 @@ function render() {
   const list = candidates();
   const inSlip = new Set(state.slip.map(s => s.pid));
   if (!list.length) {
-    let msg = state.date === 'today' ? 'No matches left today for this filter. Try Tomorrow or Next 7 days.' : 'No picks for this filter.';
+    let msg = state.date === 'today' ? 'No matches left today for this filter. Try another day tab or Next 7 days. The free fixture list only covers the coming round, so later days may fill in nearer the time.' : 'No picks for this filter.';
     if (state.boost === 'on' && !BOOST_MARKETS.has(state.market)) msg = 'This market does not count towards the bet365 Acca Boost. Switch to Match result or Both teams to score.';
     $('list').innerHTML = '<div class="empty">' + msg + '</div>';
   } else {
